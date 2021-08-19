@@ -1,5 +1,5 @@
 import express from 'express'
-import db from'../db.js'
+import db from '../db.js'
 const router = express.Router()
 
 
@@ -9,14 +9,14 @@ router.get('/', async (req, res, next) => {
   try {
     const [people] = await db.execute({
       sql: 'SELECT * FROM person LEFT OUTER JOIN zombie ON eatenBy = zombie.id',
-  
+
       // nestTables resolve conflitos de haver campos com mesmo nome nas tabelas
       // nas quais fizemos JOIN (neste caso, `person` e `zombie`).
       // descrição: https://github.com/felixge/node-mysql#joins-with-overlapping-column-names
       nestTables: true
     })
 
-    
+
     // Exercício 3: negociação de conteúdo para esta resposta
     //
     // renderiza a view de listagem de pessoas, passando como contexto
@@ -55,13 +55,13 @@ router.put('/eaten/', async (req, res, next) => {
     const [result] = await db.execute(`UPDATE person 
                                        SET alive=false, eatenBy=?
                                        WHERE id=?`,
-                                      [zombieId, personId])
+      [zombieId, personId])
     if (result.affectedRows !== 1) {
       req.flash('error', 'Não há pessoa para ser comida.')
     } else {
       req.flash('success', 'A pessoa foi inteiramente (não apenas cérebro) engolida.')
     }
-    
+
   } catch (error) {
     req.flash('error', `Erro desconhecido. Descrição: ${error}`)
 
@@ -97,6 +97,21 @@ router.get('/new/', (req, res) => {
 //   2. Redirecionar para a rota de listagem de pessoas
 //      - Em caso de sucesso do INSERT, colocar uma mensagem feliz
 //      - Em caso de erro do INSERT, colocar mensagem vermelhinha
+router.delete('/:id', async (req, res) => {
+  try {
+    const id = req.params.id;
+    console.log(`id ${id}`);
+    const [result] = await db.execute('DELETE FROM person WHERE id=?', [id]);
+    req.flash('success', 'Pessoa excluída')
+    res.redirect('/people/');
+
+
+  } catch (error) {
+    console.error(error)
+    error.friendlyMessage = 'Não foi possível excluir a pessoa';
+    req.flash('error', 'Não foi possível excluir a pessoa!')
+  }
+})
 
 
 export default router
